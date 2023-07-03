@@ -3,14 +3,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <pthread.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define BUFSZ 1024
+#define BUFSZ 2048
 
-void client_thread(void *data);
+void *listen_thread(void *data);
+
+struct list_sock {
+	int s;
+};
+int mutex;
 
 int main(int argc, char **argv){
 	if(argc < 3) DieWithUserMessage("Fail!", "menos args");
@@ -26,6 +32,7 @@ int main(int argc, char **argv){
 	if(s == -1){
 		DieWithSystemMessage("Erro ao abrir socket!");
 	}
+	mutex = 0;
 
 	char buf[BUFSZ];
 	
@@ -44,10 +51,20 @@ int main(int argc, char **argv){
 	if(!strncmp(buf, "00", 2)) printf("User limit exceeded\n");
 	else{
 		printf("User %s joined the group!\n", buf);
+		struct list_sock *ls = malloc(sizeof(*ls));
+		ls->s = s;
+		pthread_t tid;
+		pthread_create(&tid, NULL, listen_thread, ls);
+		pthread_mutex_t t;
+		pthread_mutex_init(&t, NULL);
+		pthread_mutex_lock(&t);
+		pthread_mutex_unlock(&t);
 		while(1){
 			// Send msg
 			memset(buf, 0, BUFSZ);
+			mutex = 0;
 			fgets(buf, BUFSZ-1, stdin);
+			mutex = 1;
 			if(!strncmp(buf, "close connection", 16)){
 				size_t count = send(s, buf, strlen(buf), 0);
 				if(count != strlen(buf)) DieWithSystemMessage("Erro ao enviar!");
@@ -114,3 +131,21 @@ int main(int argc, char **argv){
 	close(s);
 	exit(EXIT_SUCCESS);
 }
+
+void *listen_thread(void *data){
+	struct list_sock *ls = (struct list_sock *) data;
+	char buf[BUFSZ];
+	memset(buf, 0, BUFSZ);
+	unsigned total = 0;
+	while(1){
+		while(mutex);
+		size_t count = recv(ls->s, buf + total, BUFSZ - total, 0);
+		if(count < 0) DieWithSystemMessage("Error!");
+		total += (int)count;
+		if(count <= 0) break;
+		if(buf[count] == '\0') break;
+	}
+	printf("%s\n", buf);
+	pthread_exit(EXIT_SUCCESS);
+}
+

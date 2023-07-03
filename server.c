@@ -171,7 +171,7 @@ void *client_thread(void *data){
 					if(count != strlen(msgback)) DieWithSystemMessage("bytes erro!");
 
 					char msgto[BUFSZ];
-					sprintf(msgto, "P [%d:%d] %d: %.1000s", hours, minutes, id+1, msg);
+					sprintf(msgto, "P [%d:%d] %02d: %.1000s", hours, minutes, id+1, msg);
 					size_t count2 = send(client_list[id].csock, msgto, strlen(msgto), 0);
 					if(count2 != strlen(msgto)) DieWithSystemMessage("bytes erro!");
 				}

@@ -1,9 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 const int bufz = 2048;
+
+void *f(void *g){
+	printf("start\n");
+	//for(unsigned long i=0;i<(0xFFFFFFFFFF);++i);
+	printf("end\n");
+	return NULL;
+}
 
 int main(void){
 	printf("%02d\n", 15);
@@ -24,5 +33,12 @@ int main(void){
 	sprintf(tteste, "%d:%d -> %s", hour, mm, b);
 	printf("%s\n", tteste);
 
+	pthread_t tid;
+	pthread_create(&tid, NULL, &f, NULL);
+	//pthread_mutex_t l;
+	//pthread_mutex_init(&l, NULL);
+	//pthread_mutex_lock(&l);
+	printf("OK\n");
 }
+
 
