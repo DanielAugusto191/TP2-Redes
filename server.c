@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 
 #define BUFSZ 2000
-#define MAX_CONN 2
+#define MAX_CONN 3
 
 void *client_thread(void *data);
 struct client_data{
@@ -78,11 +78,18 @@ int main(int argc, char *argv[]){
 			cdata->id = i;
 			client_check[i] = 1;
 			client_list[i] = *cdata;
-			char msg[3];
-			sprintf(msg, "%02d", i+1);
 			printf("User %02d added\n", i+1);
+			char msg[BUFSZ];
+			sprintf(msg, "User %02d joined the group!", i+1);
 			size_t count = send(cdata->csock, msg, strlen(msg), 0);
 			if(count != strlen(msg)) DieWithUserMessage("erro: ", "confirm conn error");
+			for(int j=0;j<MAX_CONN;++j){
+				if(client_check[j]){
+					if(j == cdata->id) continue;
+					size_t count = send(client_list[j].csock, msg, strlen(msg), 0);
+					if(count != strlen(msg)) DieWithUserMessage("erro: ", "confirm conn error");
+				}
+			}
 			pthread_t tid;
 			pthread_create(&tid, NULL, client_thread, cdata);
 		}
@@ -106,14 +113,24 @@ void *client_thread(void *data){
 		}
 		if(total == 0) break;
 		if(!strncmp(buf, "close connection", 16)){
+			printf("User %02d removed\n", cdata->id+1);
 			char ans[] = "confirm";
 			size_t count = send(cdata->csock, ans, sizeof(ans), 0);
 			if(count != sizeof(ans)) DieWithSystemMessage("bytes erro!");
+			client_check[cdata->id] = 0;
+			char msg[BUFSZ];
+			sprintf(msg, "User %02d left the group!", cdata->id+1);
+			for(int i=0;i<MAX_CONN;++i) if(client_check[i]){
+				if(i == cdata->csock) continue;
+				size_t count = send(client_list[i].csock, msg, sizeof(msg), 0);
+				if(count != sizeof(msg)) DieWithSystemMessage("bytes erro!");
+			}
 			break;
 		}else if(!strncmp(buf, "list users", 9)){
 			char msg[50];
 			strcpy(msg, "");
 			for(int i=0;i<MAX_CONN;++i) if(client_check[i] == 1){
+				if(i == cdata->id) continue;
 				char t[5];
 				char spc = ' ';
 				sprintf(t, "%02d", i+1);
@@ -131,22 +148,19 @@ void *client_thread(void *data){
 				time_t now = time(NULL);
 				struct tm *tm_struct = localtime(&now);
 				int hours = tm_struct->tm_hour, minutes = tm_struct->tm_min;
-				printf("[%d:%d] %02d: %s\n", hours, minutes, cdata->id+1, msg);
-
+				printf("[%02d:%02d] %02d: %s\n", hours, minutes, cdata->id+1, msg);
 				char msgback[BUFSZ];
-				sprintf(msgback, "[%d:%d] -> all: %.1000s", hours, minutes, msg);
+				sprintf(msgback, "[%02d:%02d] -> all: %.1000s", hours, minutes, msg);
 				size_t count = send(cdata->csock, msgback, strlen(msgback), 0);
 				if(count != strlen(msgback)) DieWithSystemMessage("bytes erro!");
 
 				char msgall[BUFSZ];
-				sprintf(msgall, "[%d:%d] %02d: %.1000s", hours, minutes, cdata->id+1, msg);
+				sprintf(msgall, "[%02d:%02d] %02d: %.1000s", hours, minutes, cdata->id+1, msg);
 				for(int i=0;i<MAX_CONN;++i) if(client_check[i]){
 					if(i == cdata->id) continue;
 					size_t count = send(client_list[i].csock, msgall, strlen(msgall), 0);
 					if(count != strlen(msgall)) DieWithSystemMessage("bytes erro!");
 				}
-
-				
 			}else{
 				char sid[3];
 				sid[0] = buf[8];
@@ -167,12 +181,12 @@ void *client_thread(void *data){
 					int hours = tm_struct->tm_hour, minutes = tm_struct->tm_min;
 					
 					char msgback[BUFSZ];
-					sprintf(msgback, "P [%d:%d] -> %02d: %.1000s", hours, minutes, cdata->id+1, msg);
+					sprintf(msgback, "P [%02d:%02d] -> %02d: %.1000s", hours, minutes, id+1, msg);
 					size_t count = send(cdata->csock, msgback, strlen(msgback), 0);
 					if(count != strlen(msgback)) DieWithSystemMessage("bytes erro!");
 
 					char msgto[BUFSZ];
-					sprintf(msgto, "P [%d:%d] %02d: %.1000s", hours, minutes, id+1, msg);
+					sprintf(msgto, "P [%02d:%02d] %02d: %.1000s", hours, minutes, cdata->id+1, msg);
 					size_t count2 = send(client_list[id].csock, msgto, strlen(msgto), 0);
 					if(count2 != strlen(msgto)) DieWithSystemMessage("bytes erro!");
 				}

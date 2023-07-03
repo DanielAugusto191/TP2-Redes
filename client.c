@@ -16,7 +16,7 @@ void *listen_thread(void *data);
 struct list_sock {
 	int s;
 };
-int mutex;
+int mutex, closed;
 
 int main(int argc, char **argv){
 	if(argc < 3) DieWithUserMessage("Fail!", "menos args");
@@ -39,6 +39,7 @@ int main(int argc, char **argv){
 	// Connect
 	struct sockaddr *addr = (struct sockaddr *)(&storage);
 	if (0 != connect(s, addr, sizeof(storage))) DieWithSystemMessage("Erro ao connectar!");
+	closed = 0;
 	memset(buf, 0, BUFSZ);
 	unsigned total = 0;
 	while(1){
@@ -50,15 +51,11 @@ int main(int argc, char **argv){
 	}
 	if(!strncmp(buf, "00", 2)) printf("User limit exceeded\n");
 	else{
-		printf("User %s joined the group!\n", buf);
+		printf("%s\n", buf);
 		struct list_sock *ls = malloc(sizeof(*ls));
 		ls->s = s;
 		pthread_t tid;
 		pthread_create(&tid, NULL, listen_thread, ls);
-		pthread_mutex_t t;
-		pthread_mutex_init(&t, NULL);
-		pthread_mutex_lock(&t);
-		pthread_mutex_unlock(&t);
 		while(1){
 			// Send msg
 			memset(buf, 0, BUFSZ);
@@ -66,6 +63,7 @@ int main(int argc, char **argv){
 			fgets(buf, BUFSZ-1, stdin);
 			mutex = 1;
 			if(!strncmp(buf, "close connection", 16)){
+				closed = 1;
 				size_t count = send(s, buf, strlen(buf), 0);
 				if(count != strlen(buf)) DieWithSystemMessage("Erro ao enviar!");
 				memset(buf, 0, BUFSZ);
@@ -145,8 +143,10 @@ void *listen_thread(void *data){
 			total += (int)count;
 			if(count <= 0) break;
 			if(buf[count] == '\0') break;
+			if(closed) break;
 		}
 		printf("%s\n", buf);
+		if(closed) break;
 	}
 	pthread_exit(EXIT_SUCCESS);
 }
