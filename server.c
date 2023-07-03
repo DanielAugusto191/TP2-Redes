@@ -134,13 +134,14 @@ void *client_thread(void *data){
 				printf("[%d:%d] %02d: %s\n", hours, minutes, cdata->id+1, msg);
 
 				char msgback[BUFSZ];
-				sprintf(msgback, "[%d:%d] -> all: %.1000s\n", hours, minutes, msg);
+				sprintf(msgback, "[%d:%d] -> all: %.1000s", hours, minutes, msg);
 				size_t count = send(cdata->csock, msgback, strlen(msgback), 0);
 				if(count != strlen(msgback)) DieWithSystemMessage("bytes erro!");
 
 				char msgall[BUFSZ];
-				sprintf(msgall, "[%d:%d] %02d: %.1000s\n", hours, minutes, cdata->id, msg);
+				sprintf(msgall, "[%d:%d] %02d: %.1000s", hours, minutes, cdata->id+1, msg);
 				for(int i=0;i<MAX_CONN;++i) if(client_check[i]){
+					if(i == cdata->id) continue;
 					size_t count = send(client_list[i].csock, msgall, strlen(msgall), 0);
 					if(count != strlen(msgall)) DieWithSystemMessage("bytes erro!");
 				}

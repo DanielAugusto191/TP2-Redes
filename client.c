@@ -135,17 +135,19 @@ int main(int argc, char **argv){
 void *listen_thread(void *data){
 	struct list_sock *ls = (struct list_sock *) data;
 	char buf[BUFSZ];
-	memset(buf, 0, BUFSZ);
-	unsigned total = 0;
 	while(1){
-		while(mutex);
-		size_t count = recv(ls->s, buf + total, BUFSZ - total, 0);
-		if(count < 0) DieWithSystemMessage("Error!");
-		total += (int)count;
-		if(count <= 0) break;
-		if(buf[count] == '\0') break;
+		memset(buf, 0, BUFSZ);
+		unsigned total = 0;
+		while(1){
+			while(mutex);
+			size_t count = recv(ls->s, buf + total, BUFSZ - total, 0);
+			if(count < 0) DieWithSystemMessage("Error!");
+			total += (int)count;
+			if(count <= 0) break;
+			if(buf[count] == '\0') break;
+		}
+		printf("%s\n", buf);
 	}
-	printf("%s\n", buf);
 	pthread_exit(EXIT_SUCCESS);
 }
 
