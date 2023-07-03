@@ -80,45 +80,37 @@ int main(int argc, char **argv){
 				printf("%s\n", buf);
 			}else if(buf[0] == 's' && buf[1] == 'e' && buf[2] == 'n' && buf[3] == 'd'){
 				if(buf[5] == 'a'){
-
-					
+					size_t count = send(s, buf, strlen(buf), 0);
+					if(count != strlen(buf)) DieWithSystemMessage("Erro ao enviar!");
+					memset(buf, 0, BUFSZ);
+					unsigned total = 0;
+					while(1){
+						size_t count = recv(s, buf + total, BUFSZ - total, 0);
+						if(count < 0) DieWithSystemMessage("Error!");
+						total += (int)count;
+						if(count <= 0) break;
+						if(buf[count] == '\0') break;
+					}
+					printf("%s\n", buf);
 				}else{
-				//	char id[3];
-				//	id[0] = buf[8];
-				//	id[1] = buf[9];
-				//	id[2] = '\0';
-					char msg[BUFSZ];
-					strcpy(msg, buf+11);
-					puts(msg);
+					size_t count = send(s, buf, strlen(buf), 0);
+					if(count != strlen(buf)) DieWithSystemMessage("Erro ao enviar!");
+					memset(buf, 0, BUFSZ);
+					unsigned total = 0;
+					while(1){
+						size_t count = recv(s, buf + total, BUFSZ - total, 0);
+						if(count < 0) DieWithSystemMessage("Error!");
+						total += (int)count;
+						if(count <= 0) break;
+						if(buf[count] == '\0') break;
+					}
+					if(!strncmp(buf, "-1", 2)) printf("Receiver not found\n");
+					else printf("%s\n", buf);
 				}
 			}else{
 			}
 		}
 	}
-	//	else if(!strcmp(AstrSplit[0], "exit")){
-	//		char exit[8];
-	//		memset(exit, 0, 8);
-	//		strcpy(exit, AstrSplit[0]);
-	//		exit[4] = '\\';
-	//		exit[5] = 'e';
-	//		exit[6] = 'n';
-	//		exit[7] = 'd';
-	//		size_t count = send(s, exit, 8, 0);
-	//		if(count != 8){
-	//			DieWithSystemMessage("Erro ao enviar!");
-	//		}
-	//		memset(buf, 0, BUFSZ);
-	//		unsigned total = 0;
-	//		while(1){
-	//			size_t count = recv(s, buf + total, BUFSZ-total, 0);
-	//			total += count;
-	//			if(count == 0) break;
-	//			if(buf[total-4] == '\\' && buf[total-3] == 'e' && buf[total-2] == 'n' && buf[total-1] == 'd') break;
-	//		}
-	//		buf[strlen(buf)-4] = '\0';
-	//		printf("%s\n", buf);
-	//		break;
-	//	}
 	close(s);
 	exit(EXIT_SUCCESS);
 }
