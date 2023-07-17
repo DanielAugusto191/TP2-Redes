@@ -10,8 +10,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define BUFSZ 2000
-#define MAX_CONN 3
+#define BUFSZ 2048
+#define MAX_CONN 15
 
 void *client_thread(void *data);
 struct client_data{
